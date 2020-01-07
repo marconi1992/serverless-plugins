@@ -1,4 +1,5 @@
 const {join} = require('path');
+const URL = require('url');
 const figures = require('figures');
 const SQS = require('aws-sdk/clients/sqs');
 const {
@@ -186,11 +187,18 @@ class ServerlessOfflineSQS {
 
     const {QueueUrl} = await fromCallback(cb => client.getQueueUrl({QueueName}, cb));
 
+    const {endpoint} = this.getConfig();
+
+    const parsedQueueurl = new URL(QueueUrl);
+    const parsedEndpoint = new URL(endpoint);
+
+    parsedQueueurl.host = parsedEndpoint.host;
+
     const next = async () => {
       const {Messages} = await fromCallback(cb =>
         client.receiveMessage(
           {
-            QueueUrl,
+            QueueUrl: parsedQueueurl.toString(),
             MaxNumberOfMessages: queueEvent.batchSize,
             AttributeNames: ['All'],
             MessageAttributeNames: ['All'],
